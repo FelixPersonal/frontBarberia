@@ -91,6 +91,8 @@ BarberoNombre.propTypes = {
   id_empleado: PropTypes.number
 }
 
+
+
 function ListaCitas() {
   const [visible, setVisible] = useState(false);
   const [citas, setCitas] = useState([]);
@@ -102,25 +104,25 @@ function ListaCitas() {
   const pageSize = 5;
   const [currentPage, setCurrentPage] = useState(1);
 
+ 
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const userInfo = await getUserInfo();
-        console.log('User Info:', userInfo);
-        console.log('User ID:', userInfo.userId);
-        console.log('User Role ID:', userInfo.rol.id_rol);
-
         setUserId(userInfo.userId);
         setUserRoleId(userInfo.rol.id_rol);
-
+  
         let response;
         if (userInfo.rol.id_rol === 1) { // SuperAdmin
-          console.log("Fetching citas for SuperAdmin");
-          const response1 = await CitasDataService.getAllCitasServicios(2);
-          console.log("Response1 for SuperAdmin:", response1);
-          const response2 = await CitasDataService.getAllCitasServicios(3);
+          console.log("Fetching citas para admin SuperAdmin");
+          
+          const response1 = await CitasDataService.getAllCitasServicios(userInfo.userId); 
+          console.log("Response for SuperAdmin:", response1);
+  
+          const response2 = await CitasDataService.getAllCitasServicios(userInfo.userId); 
           console.log("Response2 for SuperAdmin:", response2);
-
+  
           if (Array.isArray(response1.data.citas) && Array.isArray(response2.data.citas)) {
             // Eliminar duplicados basados en el id_cita
             const combinedCitas = [...response1.data.citas, ...response2.data.citas];
@@ -133,15 +135,15 @@ function ListaCitas() {
             console.error("Error: response1.data.citas or response2.data.citas is not an array");
           }
         } else if (userInfo.rol.id_rol === 2) { // Empleado
-          console.log("Fetching citas for Empleado");
+          console.log("Fetching citas para Empleado");
           response = await CitasDataService.getAllCitasServicios(userInfo.userId);
-          console.log("Response for Empleado:", response);
+          console.log("Response para Empleado:", response);
         } else if (userInfo.rol.id_rol === 3) { // Cliente
-          console.log("Fetching citas for Cliente");
+          console.log("Fetching citas para Cliente");
           response = await CitasDataService.getAllCitasServicios(userInfo.userId);
-          console.log("Response for Cliente:", response);
+          console.log("Response para Cliente:", response);
         }
-
+  
         console.log("Response:", response);
         if (response && Array.isArray(response.data?.citas)) {
           const citasConDetalle = await Promise.all(
@@ -204,9 +206,24 @@ function ListaCitas() {
   }, [tablaActualizada]);
 
 
-  const isUser1Or2Confirmed = (cita) => {
-    return userRoleId === 1 || userRoleId === 2 ? cita.cita.estado === 'Confirmada' : false;
+
+
+  const UsuarioNombre = ({ idUser }) => {
+    const [nombre, setNombre] = useState('');
+
+    useEffect(() => {
+      const fetchNombre = async () => {
+        const nombreUsuario = await CitasDataService.getUsuario(idUser);
+        setNombre(nombreUsuario.data.nombre_usuario);
+      };
+      fetchNombre();
+    }, [idUser]);
+
+    return <>{nombre}</>;
   };
+
+
+
 
   const isCitaPasada = (fechaAtencion) => {
     const fechaCita = moment(fechaAtencion);

@@ -50,7 +50,7 @@ const getHorasOcupadas = async (id_usuario) => {
       const current = new Date(inicio);
       while (current < fin) {
         acc.push(format(current, "HH:mm"));
-        current.setMinutes(current.getMinutes() + 60); 
+        current.setMinutes(current.getMinutes() + 60);
       }
       return acc;
     }, []);
@@ -126,11 +126,6 @@ const AgendarCita = () => {
   }, [selectedHour, selectedServicesDuration]);
 
 
-  const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
-    setShowAgendarButton(newPage !== 3);
-  };
-
 
   useEffect(() => {
     const fetchHorasOcupadas = async () => {
@@ -142,10 +137,6 @@ const AgendarCita = () => {
     };
     fetchHorasOcupadas();
   }, []);
-  
-  
-
-
 
   const handleDateSelect = (info) => {
     const date = info.start;
@@ -155,6 +146,26 @@ const AgendarCita = () => {
 
     // Establecer la fecha seleccionada correctamente
     setSelectedDate(formattedDate);
+
+    // Obtener la lista de todos los elementos del calendario
+    const calendarDayElements = document.querySelectorAll('.fc-day');
+
+    // Iterar sobre los elementos del calendario para encontrar el elemento correspondiente a la fecha seleccionada
+    calendarDayElements.forEach((dayElement) => {
+      // Obtener la fecha asociada a este elemento del calendario
+      const dayDateString = dayElement.getAttribute('data-date');
+
+      // Verificar si esta fecha coincide con la fecha seleccionada
+      if (dayDateString === formattedDate) {
+        // Marcar el elemento del calendario como seleccionado cambiando su estilo
+        dayElement.style.backgroundColor = '#e83d3d';
+
+        // Restablecer el color de fondo del elemento después de un tiempo determinado (por ejemplo, 3 segundos)
+        setTimeout(() => {
+          dayElement.style.backgroundColor = ''; // Restablecer el color de fondo a su valor predeterminado
+        }, 3000); // 3000 milisegundos = 3 segundos
+      }
+    });
 
     if (agendaData.length > 0) {
       const firstAgendaDate = format(new Date(agendaData[0].fechaInicio), "yyyy-MM-dd");
@@ -194,6 +205,7 @@ const AgendarCita = () => {
 
 
 
+
   const createCitaServicio = async (idCita, serviciosSeleccionados) => {
     try {
       // Iterar sobre los servicios seleccionados
@@ -214,8 +226,6 @@ const AgendarCita = () => {
       // Manejar el error según sea necesario
     }
   };
-
-
 
 
   // Función para calcular la duración entre dos horas en formato HH:mm
@@ -296,12 +306,6 @@ const AgendarCita = () => {
   };
 
 
-
-
-
-
-
-
   useEffect(() => {
     const fetchCitasAgendadas = async () => {
       try {
@@ -315,8 +319,6 @@ const AgendarCita = () => {
 
     fetchCitasAgendadas();
   }, []);
-
-
 
 
   const calculateAppointmentTime = () => {
@@ -337,12 +339,6 @@ const AgendarCita = () => {
     console.log("Total Appointment Time:", totalAppointmentTime);
     return totalAppointmentTime;
   };
-
-
-
-
-
-
 
 
   const handleBarberoSelection = async (id_empleado) => {
@@ -401,6 +397,27 @@ const AgendarCita = () => {
     handlePageChange(currentPage + 1);
   };
 
+  const handlePageChange = (page) => {
+    if (page === 2 && selectedServices.length === 0) {
+      Swal.fire({
+        icon: "error",
+        title: "Error al cambiar de página",
+        text: "Debes seleccionar al menos un servicio antes de continuar",
+      });
+      return;
+    }
+    if (page === 3 && !selectedBarberoId) {
+      Swal.fire({
+        icon: "error",
+        title: "Error al cambiar de página",
+        text: "Debes seleccionar un barbero antes de continuar",
+      });
+      return;
+    }
+    setCurrentPage(page);
+  };
+
+
   const isAfterOrEqual = (time1, time2) => {
     const date1 = new Date(`1970-01-01T${time1}`);
     const date2 = new Date(`1970-01-01T${time2}`);
@@ -414,26 +431,25 @@ const AgendarCita = () => {
   };
 
 
-
   const generateHourOptions = (startHour, endHour, selectedDate, horasOcupadas = []) => {
     const options = [];
     const start = parseInt(startHour.split(":")[0]); // Extract the start hour
     const end = parseInt(endHour.split(":")[0]); // Extract the end hour
-  
+
     for (let hour = start; hour <= end; hour++) {
       for (let minute = 0; minute < 60; minute += 60) {
         const suffix = hour >= 12 ? "PM" : "AM";
         const formattedHora = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}:00`;
-  
+
         // Check if the time is occupied by a scheduled appointment
         const horaOcupada = horasOcupadas.includes(formattedHora);
-  
+
         // Calculate the end time of the appointment
         const horaFinCita = addMinutes(formattedHora, selectedServicesDuration);
-  
+
         // Check if the time is within the available time range
         const horaDisponible = isAfterOrEqual(formattedHora, startHour) && isBeforeOrEqual(formattedHora, endHour);
-  
+
         // After selecting a start time, calculate and display the available hours
         const handleClick = () => {
           if (horaDisponible && !horaOcupada) {
@@ -445,13 +461,13 @@ const AgendarCita = () => {
             setOptions(remainingOptions);
           }
         };
-  
+
         options.push(
-          <div key={formattedHora} style={{ padding: '5px' }}>
+          <div key={formattedHora} style={{ padding: '1px' }}>
             <button
               disabled={!horaDisponible || horaOcupada}
               style={{
-                backgroundColor: horaOcupada ? '#e83d3d' : '#4caf50',
+                backgroundColor: formattedHora === selectedHour ? '#AB1224' : (horaOcupada ? '#e83d3d' : '#447226'),
                 color: '#fff',
                 cursor: horaOcupada ? 'not-allowed' : 'pointer',
                 borderRadius: '5px',
@@ -465,10 +481,10 @@ const AgendarCita = () => {
         );
       }
     }
-  
+
     return options;
   };
-  
+
   // UseEffect to handle options generation
   useEffect(() => {
     if (selectedBarberoId && selectedDate) {
@@ -481,8 +497,24 @@ const AgendarCita = () => {
       setOptions(opciones);
     }
   }, [selectedBarberoId, selectedDate, horasOcupadas, citasAgendadas]);
-  
-  
+
+
+
+
+  // UseEffect to handle options generation
+  useEffect(() => {
+    if (selectedBarberoId && selectedDate) {
+      const opciones = generateHourOptions(
+        agendaData[0].horaInicio,
+        agendaData[0].horaFin,
+        selectedDate,
+        horasOcupadas
+      );
+      setOptions(opciones);
+    }
+  }, [selectedBarberoId, selectedDate, horasOcupadas, citasAgendadas]);
+
+
   // UseEffect to handle options generation
   useEffect(() => {
     if (selectedBarberoId && selectedDate) {
@@ -495,11 +527,6 @@ const AgendarCita = () => {
       setOptions(opciones);
     }
   }, [selectedBarberoId, selectedDate, horasOcupadas, citasAgendadas]);
-  
-
-
-
-
 
   const removeScheduledHourAndFollowingHours = (formattedHour, options) => {
     console.log("Hora agendada:", formattedHour);
@@ -515,20 +542,14 @@ const AgendarCita = () => {
   };
 
 
-
-
-
-
-  
-
   const handleAgendarClick = async () => {
     const userInfo = await getUserInfo();
     const usuarioId = userInfo.userId;
-  
+
     if (selectedBarberoId && selectedDate && selectedHour !== null) {
       try {
         const formattedHour = selectedHour.slice(0, 5);
-  
+
         const nuevaCita = {
           id_empleado: selectedBarberoId,
           id_usuario: usuarioId,  // Línea 137
@@ -536,10 +557,10 @@ const AgendarCita = () => {
           Hora_Atencion: formattedHour,
           Hora_Fin: selectedHourFin,
         };
-  
+
         const response = await CitasDataService.create(nuevaCita);
         await createCitaServicio(response.data.id_cita, selectedServices);
-  
+
         if (response) {
           console.log("Cita agendada correctamente");
           Swal.fire({
@@ -549,11 +570,11 @@ const AgendarCita = () => {
           }).then(() => {
             window.location.href = "/cliente/listacitas";
           });
-  
+
           // Actualizar las horas ocupadas
           const updatedHorasOcupadas = await getHorasOcupadas(usuarioId);  // Línea 138
           setHorasOcupadas(updatedHorasOcupadas);
-  
+
           // Actualizar las opciones disponibles
           const opciones = generateHourOptions(
             agendaData[0].horaInicio,
@@ -580,10 +601,6 @@ const AgendarCita = () => {
       });
     }
   };
-  
-
-  
-
 
   useEffect(() => {
     if (selectedBarberoId && selectedDate) {
@@ -595,7 +612,7 @@ const AgendarCita = () => {
       setOptions(opciones);
     }
   }, [selectedBarberoId, selectedDate, horasOcupadas]);
-  
+
 
   const handleHourSelection = (selectedHour) => {
     const newTime = addMinutes(selectedHour, selectedServicesDuration);
@@ -604,14 +621,6 @@ const AgendarCita = () => {
       setSelectedHourFin(newTime);
     }
   };
-
-
-
-
-
-
-
-
 
   const handleRemoveService = (serviceToRemove) => {
     // Filtrar los servicios seleccionados para eliminar el servicio seleccionado
@@ -626,9 +635,6 @@ const AgendarCita = () => {
     const removedServiceDuration = parseInt(serviceToRemove.tiempo);
     setSelectedServicesDuration((prevDuration) => prevDuration - removedServiceDuration);
   };
-
-
-
 
   // Function to calculate the total value of selected services
   const calculateTotalValue = () => {
@@ -652,12 +658,14 @@ const AgendarCita = () => {
                 <CPaginationItem
                   active={currentPage === 2}
                   onClick={() => handlePageChange(2)}
+                  disabled={selectedServices.length === 0} // Deshabilitar si no hay servicios seleccionados
                 >
                   2. Barbero
                 </CPaginationItem>
                 <CPaginationItem
                   active={currentPage === 3}
                   onClick={() => handlePageChange(3)}
+                  disabled={!selectedBarberoId} // Deshabilitar si no se ha seleccionado un barbero
                 >
                   3. Fecha y Hora
                 </CPaginationItem>
@@ -675,7 +683,7 @@ const AgendarCita = () => {
                     Seleccionar Servicios
                   </CButton>
 
-                  {tempSelectedServices.length > 0 ? (
+                  {selectedServices.length > 0 ? (
                     <CCard className="mt-3">
                       <CCardBody>
                         <CCardTitle>Servicios Seleccionados</CCardTitle>
@@ -689,7 +697,7 @@ const AgendarCita = () => {
                             </CTableRow>
                           </CTableHead>
                           <CTableBody>
-                            {tempSelectedServices.map((service, index) => (
+                            {selectedServices.map((service, index) => (
                               <CTableRow key={index}>
                                 <CTableDataCell>{index + 1}</CTableDataCell>
                                 <CTableDataCell>{service.nombre}</CTableDataCell>
@@ -728,18 +736,15 @@ const AgendarCita = () => {
                         Seleciona los servicios
                       </CModalTitle>
                     </CModalHeader>
-
                     <CModalBody>
                       <CTable>
                         <CTableHead>
                           <CTableRow></CTableRow>
                         </CTableHead>
-
                         <CModalBody>
                           <CTable style={{ borderCollapse: "separate", borderSpacing: "5px" }}>
                             <CTableBody>
                               {servicesData.map((service, index) => (
-                                // Renderizar un nuevo tr después de cada 5 servicios
                                 <React.Fragment key={`row-${index}`}>
                                   {index % 5 === 0 && <tr key={`row-${index}`}></tr>}
                                   <td
@@ -749,12 +754,11 @@ const AgendarCita = () => {
                                       border: selectedServices.some((s) => s.id === service.id)
                                         ? "2px solid #e83d3d"
                                         : "1px solid #ddd",
-                                      // Ancho del 20% para ocupar exactamente 5 columnas en una fila
                                       width: "20%",
-                                      backgroundColor: "#2c3e50", // Color de fondo para una barbería
-                                      color: "#fff", // Color del texto
-                                      borderRadius: "10px", // Bordes redondeados
-                                      boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)", // Sombra
+                                      backgroundColor: "#2c3e50",
+                                      color: "#fff",
+                                      borderRadius: "10px",
+                                      boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
                                     }}
                                   >
                                     <div style={{ width: "100%" }}>
@@ -778,7 +782,7 @@ const AgendarCita = () => {
                                           padding: "2px",
                                           cursor: "pointer",
                                           borderRadius: "5px",
-                                          width: "100%", // Botón ocupando todo el ancho
+                                          width: "100%",
                                         }}
                                         onClick={() => handleServiceSelection(service)}
                                       >
@@ -794,18 +798,14 @@ const AgendarCita = () => {
                             </CTableBody>
                           </CTable>
                         </CModalBody>
-
-
                       </CTable>
                     </CModalBody>
-
-
                     <CModalFooter style={{ justifyContent: 'center' }}>
                       <CButton
                         color="primary"
                         onClick={() => {
                           handleAcceptButtonClick();
-                          handlePageChange(2); // Cambia a la página de Barberos
+                          handlePageChange(2);
                         }}
                         style={{
                           marginTop: "5px",
@@ -816,7 +816,7 @@ const AgendarCita = () => {
                       </CButton>
                       <CButton
                         color="secondary"
-                        onClick={() => setVisibleLg(false)} // Aquí es donde se cierra el modal
+                        onClick={() => setVisibleLg(false)}
                         style={{
                           marginTop: "5px",
                           width: "50%",
@@ -824,9 +824,7 @@ const AgendarCita = () => {
                       >
                         Cancelar
                       </CButton>
-
                     </CModalFooter>
-
                   </CModal>
                 </>
               )}
@@ -837,7 +835,7 @@ const AgendarCita = () => {
                   {empleados.length > 0 ? (
                     <CRow>
                       {empleados.map((empleado, index) => (
-                        <CCol key={index} sm="auto"> {/* Cambiamos el tamaño de las columnas a 'auto' */}
+                        <CCol key={index} sm="auto">
                           <CCard
                             onClick={() => handleBarberoSelection(empleado.id_empleado)}
                             style={{
@@ -856,13 +854,13 @@ const AgendarCita = () => {
                                   : "#000",
                               boxShadow:
                                 selectedBarberoId === empleado.id_empleado
-                                  ? "0 0 30px rgba(0,0,0,0.9)" // Aumentamos el radio de la sombra
-                                  : "0 0 15px rgba(0,0,0,0.1)", // Reducimos la opacidad de la sombra
-                              borderRadius: "15px", // Redondeamos un poco los bordes
+                                  ? "0 0 30px rgba(0,0,0,0.9)"
+                                  : "0 0 15px rgba(0,0,0,0.1)",
+                              borderRadius: "15px",
                               transition: "all 0.3s ease",
-                              padding: "1px", // Reducimos el relleno interno
-                              margin: "1px", // Añadimos un pequeño margen entre los elementos
-                              height: "55px", // Ajustamos la altura de los elementos
+                              padding: "1px",
+                              margin: "1px",
+                              height: "55px",
                             }}
                           >
                             <CCardBody>
@@ -881,8 +879,6 @@ const AgendarCita = () => {
                   )}
                 </CContainer>
               )}
-
-
 
               {currentPage === 3 && (
                 <CCard>
@@ -903,8 +899,10 @@ const AgendarCita = () => {
                         editable: false,
                         selectable: true,
                       }))}
+                      eventClick={(info) => {
+                        info.el.style.backgroundColor = '#e83d3d';
+                      }}
                     />
-
                     <CModal
                       scrollable
                       alignment="center"
@@ -958,7 +956,6 @@ const AgendarCita = () => {
                         </CButton>
                       </CModalFooter>
                     </CModal>
-
                   </CCardBody>
                 </CCard>
               )}
@@ -982,7 +979,7 @@ const AgendarCita = () => {
                     <strong>Servicios:</strong>
                   </p>
                   <ul>
-                    {tempSelectedServices.map((service, index) => (
+                    {selectedServices.map((service, index) => (
                       <li key={index}>
                         {service.nombre} <br />
                         <strong style={{ display: "inline-block", width: "50px" }}>Valor:</strong> ${service.valor.toLocaleString()}
@@ -1010,7 +1007,10 @@ const AgendarCita = () => {
         <CCol className="d-flex justify-content-end">
           {currentPage < 3 ? (
             <CButton
-              disabled={!showAgendarButton}
+              disabled={
+                (currentPage === 1 && selectedServices.length === 0) ||
+                (currentPage === 2 && !selectedBarberoId)
+              }
               onClick={() => handlePageChange(currentPage + 1)}
             >
               Siguiente
@@ -1028,10 +1028,6 @@ const AgendarCita = () => {
       </CRow>
     </CContainer>
   );
-
-
-
 };
 
 export default AgendarCita;
-

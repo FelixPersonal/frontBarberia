@@ -23,6 +23,9 @@ const getEmpleadoConCitas = (id_empleado) => {
     return http.get(`/empleado/citas/${id_empleado}`);
 }
 
+const getHorariosDisponibles = (id_empleado)=>{
+    return http.get(`/horarios-disponibles/${id_empleado}`);
+}
 
 const CancelarCita = (id_cita) => {
     return http.post(`/cancelar/${id_cita}`);
@@ -84,6 +87,7 @@ const cambiarEstadoCita = async (id) => {
 
 const CitasDataService = {
     getAll,
+    getHorariosDisponibles,
     getAllCitasAgendadas,
     getAllCitasServicios,
     getEmpleadoAgendas,
